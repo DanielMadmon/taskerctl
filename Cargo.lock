@@ -1372,9 +1372,9 @@ dependencies = [
 
 [[package]]
 name = "tasker"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8388f7354d365d5d24e656c24e9688ef866c9e237309bd8fd503f63d36e7361a"
+checksum = "62b5cfb0e4c326163c714a64e61d3c64fabd8b276be5f8b1ed89a476a804412d"
 dependencies = [
  "chrono",
  "cryptex",

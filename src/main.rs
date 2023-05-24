@@ -1,13 +1,29 @@
 use clap::{Parser,Subcommand,Args};
-use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task};
+use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task};
 
 fn main(){
     
     let input = ArgsData::parse();
+    let mut new_task = Task::new();
     match input.input{
         ArgsInput::Add(options) => {
-            //TODO:Unwarp safely and add task
-           let name = options.name;         
+         if let Some(name) = options.name{
+            new_task.name = Some(name);
+         }
+         if let Some(shell) = options.shell{
+            new_task.shell = Some(shell);
+         }
+         if let Some(command) = options.command{
+            new_task.command = Some(command);
+         }
+         new_task.comment = options.comment;
+         new_task.month = options.month;
+         new_task.day_of_month = options.month;
+         new_task.day_of_week = options.day_of_week;
+         new_task.hour = options.hour;
+         new_task.minute = options.minute;
+         add_task(new_task);
+         println!("new task added successfully.");
         }
         ArgsInput::Status => {
             help();
@@ -17,6 +33,9 @@ fn main(){
         }
         ArgsInput::Remove(task_name) =>{
             remove_task(task_name.name);
+        }
+        ArgsInput::Logs =>{
+            
         }
     }
 }
@@ -40,6 +59,8 @@ enum ArgsInput{
     Add(AddOptions),
     ///remove task by passing task's name
     Remove(TaskName),
+    ///show logs
+    Logs
 }
 
 #[derive(Args,Debug,PartialEq,Clone)]
@@ -66,10 +87,10 @@ struct  AddOptions{
     #[arg(short='w',long="day_week")]
     day_of_week: Option<i32>,
     ///add hour of execution (optional)
-    #[arg(short='h',long="hour")]
+    #[arg(short='u',long="hour")]
     hour: Option<i32>,
     ///add minute of execution (optional)
-    #[arg(short='n',long="minute")]
+    #[arg(short='t',long="minute")]
     minute: Option<i32>,
 }
 #[derive(Debug,PartialEq,Args,Clone)]
@@ -79,7 +100,9 @@ struct TaskName{
 
 fn show_list(){
     let task_db = read_tasks_db();
-
+    for task in task_db{
+        println!("{task:?}");
+    }
 }
 fn help(){
 
