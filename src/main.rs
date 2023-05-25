@@ -1,6 +1,6 @@
 use clap::{Parser,Subcommand,Args};
 use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task};
-
+use comfy_table::{Table,Row};
 fn main(){
     
     let input = ArgsData::parse();
@@ -26,7 +26,7 @@ fn main(){
          println!("new task added successfully.");
         }
         ArgsInput::Status => {
-            help();
+            status();
         }
         ArgsInput::List => {
             show_list();
@@ -35,7 +35,7 @@ fn main(){
             remove_task(task_name.name);
         }
         ArgsInput::Logs =>{
-            
+            show_logs();
         }
     }
 }
@@ -99,15 +99,104 @@ struct TaskName{
 }
 
 fn show_list(){
-    let task_db = read_tasks_db();
-    for task in task_db{
-        println!("{task:?}");
-    }
-}
-fn help(){
 
+    let task_db: Vec<Task> = read_tasks_db();
+    let mut tasks_table: Table = Table::new();
+    let mut rows: Vec<Row> = vec![];
+    let mut month:i32 = 0;
+    let mut day_of_month:i32 = 0;
+    let mut day_of_week:i32 = 0;
+    let mut hour:i32 = 0;
+    let mut minute:i32 = 0;
+    let mut comment:String = String::from("None");
+    for task in task_db{
+        if let Some(month_res) = task.month{
+            month = month_res;
+        }
+        if let Some(dom_res) = task.day_of_month {
+            day_of_month = dom_res;
+        }
+        if let Some(dow_res) = task.day_of_week{
+            day_of_week = dow_res;
+        }
+        if let Some(hour_res) = task.hour{
+            hour = hour_res;
+        }
+        if let Some(min_res) = task.minute {
+            minute = min_res;
+        }
+         if let Some(comment_res) = task.comment {
+            comment = comment_res;
+        }
+        rows.push(Row::from(vec![
+            task.name.unwrap(),
+            task.shell.unwrap(),
+            task.command.unwrap(),
+            month.to_string(),
+            day_of_month.to_string(),
+            day_of_week.to_string(),
+            hour.to_string(),
+            minute.to_string(),
+            comment.clone()
+        ]));
+    }
+    tasks_table 
+        .set_header(vec![
+        "name",
+        "shell",
+        "command",
+        "month",
+        "day_of_month",
+        "day_of_week",
+        "hour",
+        "minute",
+        "comment"])
+        .add_rows(rows)
+        ;
+    
+    println!("{tasks_table}");
+}
+fn show_logs(){
+    let logs = read_logs_db();
+    let mut logs_table:Table = Table::new();
+    let mut rows: Vec<Row> = vec![];
+    if logs.is_some(){
+        for log in logs.unwrap(){
+            let mut output:String = String::from("No output");
+            let output_res:Option<String> = log.output;
+            if let Some(out) = output_res{
+                let output = out;
+            }
+            rows.push(Row::from(vec![
+                log.name,
+                log.command,
+                output,
+                log.execution_month.to_string(),
+                log.execution_day_of_month.to_string(),
+                log.execution_hour.to_string(),
+                log.execution_minute.to_string()
+            ]));
+        }
+        logs_table
+            .set_header(vec![
+                "name",
+                "command",
+                "output",
+                "execution_month",
+                "execution_day_of_month",
+                "execution_hour",
+                "execution_minute"
+                ])
+            .add_rows(rows)
+                ;
+            logs_table.trim_fmt();
+            println!("{logs_table}");
+    }
 }
 fn remove_task(task_name:String){
     rm_task(task_name);
     println!("task deleted");
+}
+fn status(){
+
 }
