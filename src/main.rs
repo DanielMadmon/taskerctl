@@ -1,6 +1,9 @@
+use std::ops::Add;
+
 use clap::{Parser,Subcommand,Args};
 use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task};
 use comfy_table::{Table,Row};
+use terminal_text_styler::TerminalStyle;
 fn main(){
     
     let input = ArgsData::parse();
@@ -37,6 +40,9 @@ fn main(){
         ArgsInput::Logs =>{
             show_logs();
         }
+        ArgsInput::Output=>{
+            logs_output();
+        }
     }
 }
     
@@ -60,7 +66,9 @@ enum ArgsInput{
     ///remove task by passing task's name
     Remove(TaskName),
     ///show logs
-    Logs
+    Logs,
+    ///Output
+    Output
 }
 
 #[derive(Args,Debug,PartialEq,Clone)]
@@ -119,8 +127,13 @@ fn show_list(){
         if let Some(dow_res) = task.day_of_week{
             day_of_week = dow_res;
         }
-        if let Some(hour_res) = task.hour{
-            hour = hour_res;
+        match task.hour{
+            Some(hour_get)=>{
+                hour = hour_get;
+            }
+            None => {
+                hour = 0;
+            }
         }
         if let Some(min_res) = task.minute {
             minute = min_res;
@@ -162,15 +175,9 @@ fn show_logs(){
     let mut rows: Vec<Row> = vec![];
     if logs.is_some(){
         for log in logs.unwrap(){
-            let mut output:String = String::from("No output");
-            let output_res:Option<String> = log.output;
-            if let Some(out) = output_res{
-                let output = out;
-            }
             rows.push(Row::from(vec![
                 log.name,
                 log.command,
-                output,
                 log.execution_month.to_string(),
                 log.execution_day_of_month.to_string(),
                 log.execution_hour.to_string(),
@@ -181,7 +188,6 @@ fn show_logs(){
             .set_header(vec![
                 "name",
                 "command",
-                "output",
                 "execution_month",
                 "execution_day_of_month",
                 "execution_hour",
@@ -196,6 +202,27 @@ fn show_logs(){
 fn remove_task(task_name:String){
     rm_task(task_name);
     println!("task deleted");
+}
+fn logs_output(){
+    let yellow: TerminalStyle = TerminalStyle::yellow_background();
+    let italic = TerminalStyle::italic_white();
+    let logs = read_logs_db();
+    let mut logs_table_outputs:Table = Table::new();
+    if let Some(logs) = logs{
+        for log in logs{
+            let name = log.name;
+            let mut output:String = String::new();
+            println!("Task Name: {}",yellow.wrap(&name));
+            if let Some(out) = log.output{
+                let output_lines = out.lines();
+                for line in output_lines{
+                    println!("{}",italic.wrap(line));
+                }
+            }
+           
+            
+        }
+    }
 }
 fn status(){
 
