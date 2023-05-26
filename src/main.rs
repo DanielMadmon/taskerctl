@@ -1,9 +1,10 @@
-use std::ops::Add;
+use std::{fs,io};
 
 use clap::{Parser,Subcommand,Args};
 use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task};
 use comfy_table::{Table,Row};
 use terminal_text_styler::TerminalStyle;
+
 fn main(){
     
     let input = ArgsData::parse();
@@ -43,6 +44,9 @@ fn main(){
         ArgsInput::Output=>{
             logs_output();
         }
+        ArgsInput::Install=>{
+            install();
+        }
     }
 }
     
@@ -57,6 +61,8 @@ struct ArgsData{
 #[derive(Debug, Subcommand,PartialEq,Clone)]
 #[command(author, version, about, long_about = None)]
 enum ArgsInput{
+    ///install tasker-service
+    Install,
     ///show tasker-service status
     Status,
     ///show all the tasks
@@ -224,6 +230,19 @@ fn logs_output(){
         }
     }
 }
+fn install(){
+    //TODO:add service installer 
+    let service_file: Result<Vec<u8>, std::io::Error> = fs::read("../tasker.service");
+    if let Ok(bytes) = service_file{
+        let service_string = String::from_utf8(bytes);
+        if let Ok(service_string) = service_string{
+            let res_name = (hostname::get().expect("error! can't set service file"));
+            let res_name = res_name.to_str().expect("error! can't set up service file");
+            let res_rep = service_string.replace("$", res_name);
+            println!("{res_rep}");
+        }
+    }
+}
 fn status(){
-
+    //TODO:add service status check
 }
