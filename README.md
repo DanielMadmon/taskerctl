@@ -23,7 +23,7 @@ cd ~.cargo/bin/
 `
 
 `
-taskerctl enable
+./taskerctl enable
 `
 
 `
