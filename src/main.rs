@@ -1,7 +1,7 @@
-use std::{fs,io};
-
+use std::{fs::{self, File},io::Write};
+use sysinfo::{System, SystemExt, ProcessExt};
 use clap::{Parser,Subcommand,Args};
-use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task};
+use tasker::taskerctl::{read_tasks_db,read_logs_db,rm_task,Task,add_task, execute_command_install,Configure};
 use comfy_table::{Table,Row};
 use terminal_text_styler::TerminalStyle;
 
@@ -44,8 +44,11 @@ fn main(){
         ArgsInput::Output=>{
             logs_output();
         }
-        ArgsInput::Install=>{
-            install();
+        ArgsInput::Enable=>{
+            enable();
+        }
+        ArgsInput::Disable => {
+            disable();
         }
     }
 }
@@ -61,8 +64,10 @@ struct ArgsData{
 #[derive(Debug, Subcommand,PartialEq,Clone)]
 #[command(author, version, about, long_about = None)]
 enum ArgsInput{
-    ///install tasker-service
-    Install,
+    ///enable tasker-service
+    Enable,
+    ///disable tasker-service
+    Disable,
     ///show tasker-service status
     Status,
     ///show all the tasks
@@ -213,11 +218,9 @@ fn logs_output(){
     let yellow: TerminalStyle = TerminalStyle::yellow_background();
     let italic = TerminalStyle::italic_white();
     let logs = read_logs_db();
-    let mut logs_table_outputs:Table = Table::new();
     if let Some(logs) = logs{
         for log in logs{
             let name = log.name;
-            let mut output:String = String::new();
             println!("Task Name: {}",yellow.wrap(&name));
             if let Some(out) = log.output{
                 let output_lines = out.lines();
@@ -230,19 +233,65 @@ fn logs_output(){
         }
     }
 }
-fn install(){
-    //TODO:add service installer 
-    let service_file: Result<Vec<u8>, std::io::Error> = fs::read("../tasker.service");
-    if let Ok(bytes) = service_file{
-        let service_string = String::from_utf8(bytes);
-        if let Ok(service_string) = service_string{
-            let res_name = (hostname::get().expect("error! can't set service file"));
-            let res_name = res_name.to_str().expect("error! can't set up service file");
-            let res_rep = service_string.replace("$", res_name);
-            println!("{res_rep}");
+fn enable(){
+    let res_name = hostname::get().expect("error! can't set service file");
+    let res_name = res_name.to_str().expect("error! can't set up service file");
+    let mut home_dir = simple_home_dir::home_dir().expect("error! can't get user home directory");
+
+    home_dir.push(".config/systemd/user/");
+
+    let header_1:&str = "[Unit]";
+    let desc:&str = "Description=tasker service";
+    let header_2:&str = "[Service]";
+    let user:String = "user=".to_string() + res_name;
+    let exec_start:String = "ExecStart=/home/".to_string() + res_name + "/.cargo/bin/tasker_service";
+    let header_3: &str = "[Install]";
+    let last_line:&str = "WantedBy=default.target";
+
+    let _res_create_service = fs::create_dir_all(&home_dir);
+    home_dir.push("tasker.service");
+    let service_file = File::create(&home_dir);
+    match service_file{
+        Ok(_service_file) => {
+            let mut service_writer = 
+            File::options().append(true).open(home_dir)
+            .expect("error! can't edit service file .please check permissions in ~.config/systemd/user/");
+        let lines = [header_1, desc, header_2, 
+            user.as_str(), exec_start.as_str(), header_3, last_line];
+            for line in lines{
+                writeln!(& mut service_writer, "{line}")
+                .expect("error! can't edit service file .please check permissions in ~.config/systemd/user/");
+            }
+            let enable = Configure::EnableTaskerService;
+            execute_command_install(enable);
+            println!("tasker service enabled Successfully!")
+        }
+        Err(err)=>{
+            eprintln!("error, can't create service file, info {err:#?}")
         }
     }
 }
+fn disable(){
+    execute_command_install(Configure::DisableTaskerService);
+    println!("tasker service disabled Successfully")
+}
 fn status(){
-    //TODO:add service status check
+    let mut is_running:bool = false;
+    let mut pid_num: String = String::new();
+    let system: System = System::new_all();
+    for (pid,procces) in system.processes(){
+        if procces.name() == "tasker_service"{
+            is_running = true;
+            pid_num = pid.to_string();
+            break;
+        }
+    }
+    match is_running{
+        true => {
+            println!("tasker service is up and running!, pid num: {pid_num}");
+        }
+        false => {
+            println!("tasker service is not running");
+        }
+    }
 }
