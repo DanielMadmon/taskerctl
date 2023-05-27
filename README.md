@@ -49,4 +49,5 @@ OR
 
 ### optional
 for ease of use you can create a symlink from ~.cargo/bin/taskerctl to /usr/bin/
+
 [1]:<https://crates.io/crates/tasker_service> "link to crate"
