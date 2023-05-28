@@ -41,7 +41,7 @@ OR
 `
 # roadmap
 - [x]  working prototype
-- [ ]  add option for execution as root
+- [x]  add option for execution as root
 - [ ]  easier installation
 - [ ]  GUI interface
 - [ ]  better documentation
